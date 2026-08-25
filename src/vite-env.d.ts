@@ -5,3 +5,9 @@ declare module '*.vue' {
   const component: DefineComponent<{}, {}, any>
   export default component
 }
+
+interface Window {
+  APP_CONFIG?: {
+    contactEmail?: string;
+  };
+}

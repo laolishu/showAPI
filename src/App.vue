@@ -3,9 +3,12 @@ import { ref } from "vue";
 import { useApiInput } from "./composables/useApiInput";
 import { useApiParser } from "./composables/useApiParser";
 import { exportToWord } from "./exporters/word-exporter";
-import { exportToExcel } from "./exporters/excel-exporter";
+// import { exportToExcel } from "./exporters/excel-exporter";
 
 const projectName = ref("");
+
+// 从 config.js 读取配置（编译后可直接修改 dist/config.js）
+const contactEmail = window.APP_CONFIG?.contactEmail || "";
 
 const {
   rawText,
@@ -79,18 +82,18 @@ async function onExportWord() {
   }
 }
 
-async function onExportExcel() {
-  if (!apiDoc.value) return;
-  exporting.value = "excel";
-  exportError.value = "";
-  try {
-    await exportToExcel(apiDoc.value, projectName.value, selectedTag.value);
-  } catch (e: any) {
-    exportError.value = `Excel 导出失败：${e.message || "未知错误"}`;
-  } finally {
-    exporting.value = null;
-  }
-}
+// async function onExportExcel() {
+//   if (!apiDoc.value) return;
+//   exporting.value = "excel";
+//   exportError.value = "";
+//   try {
+//     await exportToExcel(apiDoc.value, projectName.value, selectedTag.value);
+//   } catch (e: any) {
+//     exportError.value = `Excel 导出失败：${e.message || "未知错误"}`;
+//   } finally {
+//     exporting.value = null;
+//   }
+// }
 
 // 展开/折叠接口
 const expandedOps = ref<Set<string>>(new Set());
@@ -371,13 +374,13 @@ function isExpanded(key: string) {
             >
               {{ exporting === "word" ? "导出中..." : "导出 Word (.docx)" }}
             </button>
-            <button
+            <!-- <button
               class="btn btn-secondary"
               :disabled="exporting !== null"
               @click="onExportExcel"
             >
               {{ exporting === "excel" ? "导出中..." : "导出 Excel (.xlsx)" }}
-            </button>
+            </button> -->
           </div>
         </div>
         <div v-if="exportError" class="error-msg">{{ exportError }}</div>
@@ -390,7 +393,8 @@ function isExpanded(key: string) {
     </main>
 
     <footer class="app-footer">
-      <span>纯前端实现 · 文档不离开浏览器</span>
+      <span v-if="contactEmail">联系方式：{{ contactEmail }}</span>
+      <span v-else>纯前端实现 · 文档不离开浏览器</span>
     </footer>
   </div>
 </template>
