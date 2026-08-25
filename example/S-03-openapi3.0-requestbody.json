@@ -1,0 +1,173 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "OpenAPI 3.0 请求体与多响应样例",
+    "version": "2.1.0",
+    "description": "覆盖 requestBody、components.schemas、servers、多响应码、content-type"
+  },
+  "servers": [
+    { "url": "https://api.example.com/v2", "description": "生产环境" },
+    { "url": "https://staging.example.com/v2", "description": "预发布环境" }
+  ],
+  "tags": [
+    { "name": "用户", "description": "用户管理" },
+    { "name": "认证", "description": "登录与令牌" }
+  ],
+  "paths": {
+    "/users": {
+      "post": {
+        "tags": ["用户"],
+        "summary": "创建用户",
+        "operationId": "createUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateUserRequest" },
+              "example": {
+                "username": "zhangsan",
+                "email": "zhangsan@example.com",
+                "role": "editor",
+                "profile": { "nickname": "张三", "avatar": "https://cdn.example.com/a.png" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "409": {
+            "description": "用户名已存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["用户"],
+        "summary": "用户列表",
+        "operationId": "listUsers",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "role", "in": "query", "schema": { "$ref": "#/components/schemas/Role" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PageUser" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/token": {
+      "post": {
+        "tags": ["认证"],
+        "summary": "获取访问令牌",
+        "operationId": "getToken",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string", "format": "password" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "令牌",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" },
+                    "expiresIn": { "type": "integer" },
+                    "tokenType": { "type": "string", "example": "Bearer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "凭证错误" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Role": {
+        "type": "string",
+        "enum": ["admin", "editor", "viewer"]
+      },
+      "User": {
+        "type": "object",
+        "required": ["id", "username", "email"],
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "username": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "$ref": "#/components/schemas/Role" },
+          "profile": { "$ref": "#/components/schemas/Profile" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "nickname": { "type": "string" },
+          "avatar": { "type": "string", "format": "uri" }
+        }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "required": ["username", "email"],
+        "properties": {
+          "username": { "type": "string", "minLength": 3 },
+          "email": { "type": "string", "format": "email" },
+          "role": { "$ref": "#/components/schemas/Role" },
+          "profile": { "$ref": "#/components/schemas/Profile" }
+        }
+      },
+      "PageUser": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/User" }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "integer" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}

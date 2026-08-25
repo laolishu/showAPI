@@ -1,0 +1,199 @@
+swagger: "2.0"
+info:
+  title: "参数类型覆盖样例"
+  version: "1.0.0"
+  description: "覆盖 path、header、formData、body 参数及枚举、嵌套对象"
+basePath: "/api"
+tags:
+  - name: "订单"
+    description: "订单管理接口"
+paths:
+  /orders/{orderId}:
+    get:
+      tags: ["订单"]
+      summary: "查询订单详情"
+      operationId: "getOrder"
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          type: string
+          description: "订单编号"
+          x-example: "ORD-20260101-001"
+        - name: X-Request-Id
+          in: header
+          required: false
+          type: string
+          description: "请求追踪 ID"
+          x-example: "req-abc-123"
+        - name: includeItems
+          in: query
+          required: false
+          type: boolean
+          default: false
+          description: "是否包含订单项"
+      responses:
+        "200":
+          description: "成功"
+          schema:
+            $ref: "#/definitions/OrderDetail"
+        "404":
+          description: "订单不存在"
+    delete:
+      tags: ["订单"]
+      summary: "取消订单"
+      operationId: "cancelOrder"
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          type: string
+          description: "订单编号"
+        - name: X-Operator
+          in: header
+          required: true
+          type: string
+          description: "操作人标识"
+          x-example: "admin"
+        - name: reason
+          in: query
+          required: true
+          type: string
+          enum: ["用户取消", "超时未支付", "库存不足", "风控拦截"]
+          description: "取消原因"
+      responses:
+        "200":
+          description: "取消成功"
+        "403":
+          description: "无权限"
+  /orders:
+    post:
+      tags: ["订单"]
+      summary: "创建订单"
+      operationId: "createOrder"
+      consumes:
+        - "application/json"
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/CreateOrderRequest"
+        - name: X-Channel
+          in: header
+          required: false
+          type: string
+          enum: ["web", "app", "mini-program"]
+          description: "下单渠道"
+      responses:
+        "201":
+          description: "创建成功"
+          schema:
+            $ref: "#/definitions/OrderDetail"
+        "400":
+          description: "参数错误"
+  /upload:
+    post:
+      tags: ["订单"]
+      summary: "上传附件"
+      operationId: "uploadAttachment"
+      consumes:
+        - "multipart/form-data"
+      parameters:
+        - name: file
+          in: formData
+          required: true
+          type: file
+          description: "附件文件"
+        - name: orderId
+          in: formData
+          required: true
+          type: string
+          description: "关联订单号"
+        - name: remark
+          in: formData
+          required: false
+          type: string
+          description: "备注"
+      responses:
+        "200":
+          description: "上传成功"
+definitions:
+  OrderDetail:
+    type: object
+    title: "OrderDetail"
+    description: "订单详情"
+    properties:
+      orderId:
+        type: string
+        description: "订单编号"
+        example: "ORD-20260101-001"
+      status:
+        type: string
+        enum: ["待支付", "已支付", "已发货", "已完成", "已取消"]
+        description: "订单状态"
+      totalAmount:
+        type: number
+        format: double
+        description: "订单总金额（元）"
+        example: 1299.50
+      createTime:
+        type: string
+        format: date-time
+        description: "创建时间"
+        example: "2026-01-01T10:30:00+08:00"
+      items:
+        type: array
+        description: "订单项列表"
+        items:
+          $ref: "#/definitions/OrderItem"
+      address:
+        $ref: "#/definitions/Address"
+  OrderItem:
+    type: object
+    title: "OrderItem"
+    properties:
+      skuId:
+        type: string
+        description: "商品 SKU"
+      name:
+        type: string
+        description: "商品名称"
+      quantity:
+        type: integer
+        format: int32
+        description: "数量"
+      unitPrice:
+        type: number
+        format: double
+        description: "单价"
+  Address:
+    type: object
+    title: "Address"
+    properties:
+      province:
+        type: string
+        description: "省"
+      city:
+        type: string
+        description: "市"
+      detail:
+        type: string
+        description: "详细地址"
+  CreateOrderRequest:
+    type: object
+    title: "CreateOrderRequest"
+    required:
+      - items
+      - address
+    properties:
+      items:
+        type: array
+        description: "订单项"
+        items:
+          $ref: "#/definitions/OrderItem"
+      address:
+        $ref: "#/definitions/Address"
+      couponCode:
+        type: string
+        description: "优惠券码（可选）"

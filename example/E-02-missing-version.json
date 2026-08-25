@@ -1,0 +1,15 @@
+{
+  "info": {
+    "title": "缺失版本字段样例",
+    "description": "没有 swagger 或 openapi 字段，产品应提示无法识别版本"
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": { "description": "OK" }
+        }
+      }
+    }
+  }
+}

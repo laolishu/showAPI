@@ -1,0 +1,61 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "外部 $ref 样例（应被拒绝）",
+    "version": "1.0.0",
+    "description": "包含 http(s) 外部引用与文件路径引用。产品应识别并提示不支持，不发起任何网络请求，不生成误导性文档。"
+  },
+  "tags": [{ "name": "示例", "description": "外部引用" }],
+  "paths": {
+    "/pets": {
+      "get": {
+        "tags": ["示例"],
+        "summary": "宠物列表（引用外部 schema）",
+        "operationId": "listPets",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "https://raw.githubusercontent.com/oai/openapi-examples/master/3.0/json/petstore-expanded.json#/components/schemas/Pet" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": ["示例"],
+        "summary": "创建订单（引用本地文件 schema）",
+        "operationId": "createOrder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "./schemas/Order.json" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "创建成功" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LocalOk": {
+        "type": "object",
+        "description": "内部引用，正常",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" }
+        }
+      }
+    }
+  }
+}

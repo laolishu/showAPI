@@ -1,0 +1,120 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "组合 Schema 样例（allOf / oneOf / anyOf）",
+    "version": "1.0.0",
+    "description": "验证 IR 对 allOf 合并、oneOf/anyOf 保留候选模型的展示规则"
+  },
+  "tags": [{ "name": "消息", "description": "消息推送" }],
+  "paths": {
+    "/messages": {
+      "post": {
+        "tags": ["消息"],
+        "summary": "发送消息",
+        "operationId": "sendMessage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Message" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "已受理",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResult" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Message": {
+        "description": "消息体：公共字段 + 内容（oneOf 三选一）",
+        "allOf": [
+          { "$ref": "#/components/schemas/MessageBase" },
+          {
+            "type": "object",
+            "required": ["content"],
+            "properties": {
+              "content": { "$ref": "#/components/schemas/MessageContent" }
+            }
+          }
+        ]
+      },
+      "MessageBase": {
+        "type": "object",
+        "required": ["channel", "to"],
+        "properties": {
+          "channel": { "type": "string", "enum": ["sms", "email", "push"] },
+          "to": { "type": "string", "description": "接收方" },
+          "priority": { "type": "string", "enum": ["low", "normal", "high"], "default": "normal" }
+        }
+      },
+      "MessageContent": {
+        "description": "内容三选一：文本 / 富文本 / 模板",
+        "oneOf": [
+          { "$ref": "#/components/schemas/TextContent" },
+          { "$ref": "#/components/schemas/RichContent" },
+          { "$ref": "#/components/schemas/TemplateContent" }
+        ]
+      },
+      "TextContent": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "type": { "type": "string", "const": "text" },
+          "text": { "type": "string" }
+        }
+      },
+      "RichContent": {
+        "type": "object",
+        "required": ["html"],
+        "properties": {
+          "type": { "type": "string", "const": "rich" },
+          "html": { "type": "string" }
+        }
+      },
+      "TemplateContent": {
+        "type": "object",
+        "required": ["templateId", "vars"],
+        "properties": {
+          "type": { "type": "string", "const": "template" },
+          "templateId": { "type": "string" },
+          "vars": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        }
+      },
+      "MessageResult": {
+        "description": "结果：成功或失败（anyOf）",
+        "anyOf": [
+          { "$ref": "#/components/schemas/SuccessResult" },
+          { "$ref": "#/components/schemas/FailureResult" }
+        ]
+      },
+      "SuccessResult": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "const": true },
+          "messageId": { "type": "string" }
+        }
+      },
+      "FailureResult": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "const": false },
+          "errorCode": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

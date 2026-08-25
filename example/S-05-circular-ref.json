@@ -1,0 +1,84 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "循环引用样例",
+    "version": "1.0.0",
+    "description": "验证最大 8 层展开与循环引用可见降级提示，不卡死、不无限输出"
+  },
+  "tags": [{ "name": "组织", "description": "组织与评论" }],
+  "paths": {
+    "/orgs": {
+      "get": {
+        "tags": ["组织"],
+        "summary": "组织树",
+        "operationId": "getOrgTree",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Org" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/comments": {
+      "get": {
+        "tags": ["组织"],
+        "summary": "评论树（自引用）",
+        "operationId": "getCommentTree",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Comment" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Org": {
+        "type": "object",
+        "description": "组织：包含子组织（A→B→A 循环）",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "parent": { "$ref": "#/components/schemas/Org" },
+          "children": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Org" }
+          },
+          "owner": { "$ref": "#/components/schemas/Member" }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "description": "成员：所属组织（B→A 循环）",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "org": { "$ref": "#/components/schemas/Org" }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "description": "评论：自引用子评论",
+        "properties": {
+          "id": { "type": "integer" },
+          "text": { "type": "string" },
+          "replies": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Comment" }
+          }
+        }
+      }
+    }
+  }
+}

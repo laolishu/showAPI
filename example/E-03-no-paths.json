@@ -1,0 +1,17 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "无 paths 样例",
+    "version": "1.0.0",
+    "description": "版本合法但没有 paths，产品应提示没有可导出的接口，不生成空文档"
+  },
+  "tags": [{ "name": "空", "description": "无接口" }],
+  "components": {
+    "schemas": {
+      "Unused": {
+        "type": "object",
+        "properties": { "id": { "type": "integer" } }
+      }
+    }
+  }
+}

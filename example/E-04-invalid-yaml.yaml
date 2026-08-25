@@ -1,0 +1,11 @@
+# 非法 YAML 样例：缩进错误 + 未闭合引号，产品应提示 YAML 解析失败
+openapi: "3.0.3
+info:
+  title: "非法 YAML
+  version: 1.0.0
+paths:
+  /ping:
+    get:
+      responses:
+        "200":
+          description: OK
