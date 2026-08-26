@@ -4,7 +4,7 @@
  * @Author: lfzxs@qq.com
  * @Date: 2026-08-25 17:08:08
  * @LastEditors: lfzxs@qq.com
- * @LastEditTime: 2026-08-25 17:09:37
+ * @LastEditTime: 2026-08-26 10:45:30
  */
 /**
  * 应用配置文件
@@ -13,5 +13,5 @@
  */
 window.APP_CONFIG = {
   // 底部联系方式邮箱
-  contactEmail: "lfzxs@qq.com",
+  contactEmail: "lfzxs@hotmail.com",
 };
