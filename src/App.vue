@@ -3,7 +3,6 @@ import { ref } from "vue";
 import { useApiInput } from "./composables/useApiInput";
 import { useApiParser } from "./composables/useApiParser";
 import { exportToWord } from "./exporters/word-exporter";
-// import { exportToExcel } from "./exporters/excel-exporter";
 
 const projectName = ref("");
 
@@ -66,7 +65,7 @@ function clearInput() {
 }
 
 // 导出
-const exporting = ref<"word" | "excel" | null>(null);
+const exporting = ref<"word" | null>(null);
 const exportError = ref("");
 
 async function onExportWord() {
@@ -81,19 +80,6 @@ async function onExportWord() {
     exporting.value = null;
   }
 }
-
-// async function onExportExcel() {
-//   if (!apiDoc.value) return;
-//   exporting.value = "excel";
-//   exportError.value = "";
-//   try {
-//     await exportToExcel(apiDoc.value, projectName.value, selectedTag.value);
-//   } catch (e: any) {
-//     exportError.value = `Excel 导出失败：${e.message || "未知错误"}`;
-//   } finally {
-//     exporting.value = null;
-//   }
-// }
 
 // 展开/折叠接口
 const expandedOps = ref<Set<string>>(new Set());
@@ -120,11 +106,23 @@ function isExpanded(key: string) {
       <!-- 步骤 1：输入 -->
       <section class="card">
         <h2>① 导入 API 文档</h2>
-        <input ref="fileInputRef" type="file" accept=".json,.yaml,.yml,.txt" style="display: none"
-          @change="onFileInputChange" />
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept=".json,.yaml,.yml,.txt"
+          style="display: none"
+          @change="onFileInputChange"
+        />
         <div class="input-area">
-          <div class="drop-zone" :class="{ dragging: isDragging }" @click="openFilePicker" @dragenter="onDragEnter"
-            @dragover.prevent @dragleave="onDragLeave" @drop.prevent="onDrop">
+          <div
+            class="drop-zone"
+            :class="{ dragging: isDragging }"
+            @click="openFilePicker"
+            @dragenter="onDragEnter"
+            @dragover.prevent
+            @dragleave="onDragLeave"
+            @drop.prevent="onDrop"
+          >
             <p>拖拽文件到此处，或点击选择文件</p>
             <p class="hint">
               支持 Swagger 2.0 / OpenAPI 3.0 · JSON / YAML · 最大 10 MB
@@ -132,8 +130,12 @@ function isExpanded(key: string) {
           </div>
           <div class="paste-area">
             <label>或粘贴 JSON / YAML 内容：</label>
-            <textarea v-model="rawText" rows="6" placeholder='{"swagger": "2.0", "info": {...}, "paths": {...}}'
-              @input="onTextareaInput"></textarea>
+            <textarea
+              v-model="rawText"
+              rows="6"
+              placeholder='{"swagger": "2.0", "info": {...}, "paths": {...}}'
+              @input="onTextareaInput"
+            ></textarea>
           </div>
         </div>
 
@@ -188,11 +190,20 @@ function isExpanded(key: string) {
 
         <!-- Tag 筛选 -->
         <div class="tag-filter">
-          <button class="tag-btn" :class="{ active: selectedTag === null }" @click="selectedTag = null">
+          <button
+            class="tag-btn"
+            :class="{ active: selectedTag === null }"
+            @click="selectedTag = null"
+          >
             全部（{{ operations.length }}）
           </button>
-          <button v-for="tag in tags" :key="tag" class="tag-btn" :class="{ active: selectedTag === tag }"
-            @click="selectedTag = tag">
+          <button
+            v-for="tag in tags"
+            :key="tag"
+            class="tag-btn"
+            :class="{ active: selectedTag === tag }"
+            @click="selectedTag = tag"
+          >
             {{ tag }}（{{
               operations.filter((o) => o.primaryTag === tag).length
             }}）
@@ -201,10 +212,17 @@ function isExpanded(key: string) {
 
         <!-- 接口列表 -->
         <div class="op-list">
-          <div v-for="op in filteredOperations" :key="op.operationKey" class="op-item"
-            :class="{ expanded: isExpanded(op.operationKey) }">
+          <div
+            v-for="op in filteredOperations"
+            :key="op.operationKey"
+            class="op-item"
+            :class="{ expanded: isExpanded(op.operationKey) }"
+          >
             <div class="op-header" @click="toggleOp(op.operationKey)">
-              <span class="method-badge" :class="`method-${op.method.toLowerCase()}`">
+              <span
+                class="method-badge"
+                :class="`method-${op.method.toLowerCase()}`"
+              >
                 {{ op.method }}
               </span>
               <span class="op-path">{{ op.path }}</span>
@@ -256,7 +274,10 @@ function isExpanded(key: string) {
               <!-- 请求体 -->
               <div v-if="op.requestBody" class="detail-section">
                 <h4>请求体（{{ op.requestBody.contentType }}）</h4>
-                <div v-if="op.requestBody.fields.length === 0" class="empty-hint">
+                <div
+                  v-if="op.requestBody.fields.length === 0"
+                  class="empty-hint"
+                >
                   无字段
                 </div>
                 <table v-else class="param-table">
@@ -313,7 +334,11 @@ function isExpanded(key: string) {
         <h2>③ 导出配置</h2>
         <div class="config-row">
           <label>项目名称：</label>
-          <input v-model="projectName" type="text" placeholder="输入项目名称（可选）" />
+          <input
+            v-model="projectName"
+            type="text"
+            placeholder="输入项目名称（可选）"
+          />
         </div>
         <div class="config-row">
           <label>导出范围：</label>
@@ -328,16 +353,13 @@ function isExpanded(key: string) {
         <div class="config-row">
           <label>导出格式：</label>
           <div class="format-options">
-            <button class="btn btn-primary" :disabled="exporting !== null" @click="onExportWord">
+            <button
+              class="btn btn-primary"
+              :disabled="exporting !== null"
+              @click="onExportWord"
+            >
               {{ exporting === "word" ? "导出中..." : "导出 Word (.docx)" }}
             </button>
-            <!-- <button
-              class="btn btn-secondary"
-              :disabled="exporting !== null"
-              @click="onExportExcel"
-            >
-              {{ exporting === "excel" ? "导出中..." : "导出 Excel (.xlsx)" }}
-            </button> -->
           </div>
         </div>
         <div v-if="exportError" class="error-msg">{{ exportError }}</div>
@@ -350,9 +372,11 @@ function isExpanded(key: string) {
     </main>
 
     <footer class="app-footer">
-      <span v-if="contactEmail">联系方式：<a class="footer-link" :href="`mailto:${contactEmail}`">{{
-        contactEmail
-      }}</a></span>
+      <span v-if="contactEmail"
+        >联系方式：<a class="footer-link" :href="`mailto:${contactEmail}`">{{
+          contactEmail
+        }}</a></span
+      >
       <span v-else>纯前端实现 · 文档不离开浏览器</span>
     </footer>
   </div>

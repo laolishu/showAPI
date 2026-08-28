@@ -1,8 +1,10 @@
 # Swagger / OpenAPI 文档转换工具
 
-纯前端实现的 Swagger 2.0 / OpenAPI 3.0 文档转换工具，支持将 API 规范文档导出为 **Word (.docx)** 和 **Excel (.xlsx)** 格式。
+本项目是一个面向开发者和 API 文档维护者的本地前端工具，支持 Swagger 2.0 与 OpenAPI 3.0 规范的文档转换与导出。它可将 API 文档直接转换为可交付的 **Word (.docx)** 格式，适用于离线环境、内网场景和对数据隐私敏感的团队。
 
 > 所有处理均在浏览器本地完成，文档不会上传到任何服务器。
+
+该工具支持 **JSON/YAML** 输入、**Tag 筛选**、**接口预览** 和 **本地导出**，能够快速将 API 规范转成可分享的文档格式，适合 Swagger/OpenAPI 文档快速交付与评审。
 
 ## 功能特性
 
@@ -13,7 +15,6 @@
 - **接口预览**：展开查看请求参数、请求体、响应码、响应字段等详情
 - **按 Tag 导出**：选中某个 Tag 时仅导出该模块接口，选中"全部"时导出所有接口
 - **Word 导出**：封面、文档概述、自动目录（TOC 域）、接口详情表格、数据模型附录
-- **Excel 导出**：7 个 Sheet（文档信息、接口清单、请求参数、请求体字段、响应码、响应字段、数据模型）
 
 ## 技术栈
 
@@ -23,7 +24,6 @@
 | 构建 | Vite 6.3 |
 | 解析 | `yaml`（YAML/JSON 解析） |
 | Word 导出 | `docx` 9.x |
-| Excel 导出 | `xlsx` (SheetJS) |
 
 ## 快速开始
 
@@ -58,7 +58,7 @@ npm run preview
 4. **导出文档**：
    - 填写项目名称（可选）
    - 选择导出范围（全部 / 当前 Tag）
-   - 点击"导出 Word"或"导出 Excel"
+   - 点击"导出 Word"
 
 ## 项目结构
 
@@ -86,8 +86,7 @@ showAPI/
     │   ├── useApiInput.ts      # 文件/粘贴输入处理
     │   └── useApiParser.ts     # 解析编排 + Tag 筛选
     └── exporters/
-        ├── word-exporter.ts    # Word (.docx) 导出
-        └── excel-exporter.ts   # Excel (.xlsx) 导出
+        └── word-exporter.ts    # Word (.docx) 导出
 ```
 
 ## 架构说明
@@ -101,13 +100,12 @@ showAPI/
                     ┌──────────────┐            │
                     │  渲染器       │◀───────────┘
                     │ word-exporter│──▶ .docx
-                    │ excel-exporter│──▶ .xlsx
                     └──────────────┘
 ```
 
 - **IR（中间表示）**：`src/types/ir.ts` 定义了 `ApiDocument`、`ApiOperation`、`ApiField` 等类型，将 OpenAPI 规范与渲染器解耦
 - **解析层**：`openapi-parser.ts` 负责将原始规范转换为 IR，`schema-utils.ts` 处理 `$ref` 解析和字段树构建
-- **导出层**：Word 和 Excel 导出器只依赖 IR 类型，不直接读取 OpenAPI 原始结构
+- **导出层**：Word 导出器只依赖 IR 类型，不直接读取 OpenAPI 原始结构
 
 ## Word 导出内容
 
@@ -118,18 +116,6 @@ showAPI/
 | 接口目录 | Word 原生 TOC 域（打开后更新域即可生成） |
 | 接口详情 | 按 Tag 分组，每个接口包含基本信息、请求参数、请求体、响应码、响应字段 |
 | 数据模型附录 | 所有 Schema 的字段定义 |
-
-## Excel 导出内容
-
-| Sheet | 说明 |
-|-------|------|
-| 文档信息 | 项目名称、版本、接口数量等 |
-| 接口清单 | 所有接口的方法、路径、描述、Tag |
-| 请求参数 | 各接口的 Query/Path/Header 参数 |
-| 请求体字段 | 请求体 Schema 的字段树（含层级序号） |
-| 响应码 | 各接口的响应状态码及描述 |
-| 响应字段 | 响应 Schema 的字段树 |
-| 数据模型 | 所有定义的 Schema 字段 |
 
 ## 注意事项
 
