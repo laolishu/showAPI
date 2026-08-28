@@ -52,6 +52,7 @@ const zh = {
   scopeTag: (tag: string, n: number) => `仅导出 Tag「${tag}」的接口（${n} 个）`,
   scopeAll: (n: number) => `导出全部接口（${n} 个）`,
   exportFail: (msg: string) => `Word 导出失败：${msg}`,
+  exportSuccess: "导出成功，文件已开始下载。",
 };
 
 const en = {
@@ -104,6 +105,7 @@ const en = {
   scopeTag: (tag: string, n: number) => `Export Tag "${tag}" only (${n} ops)`,
   scopeAll: (n: number) => `Export all operations (${n})`,
   exportFail: (msg: string) => `Word export failed: ${msg}`,
+  exportSuccess: "Export successful, download has started.",
 };
 
 const translations: Record<Lang, typeof zh> = { zh, en };

@@ -73,13 +73,20 @@ function clearInput() {
 // 导出
 const exporting = ref<"word" | null>(null);
 const exportError = ref("");
+const exportSuccess = ref("");
 
 async function onExportWord() {
   if (!apiDoc.value) return;
   exporting.value = "word";
   exportError.value = "";
+  exportSuccess.value = "";
   try {
     await exportToWord(apiDoc.value, projectName.value, selectedTag.value);
+    exportSuccess.value = t.value.exportSuccess;
+    // 3秒后自动消失
+    setTimeout(() => {
+      exportSuccess.value = "";
+    }, 3000);
   } catch (e: any) {
     exportError.value = t.value.exportFail(e.message || "");
   } finally {
@@ -388,6 +395,9 @@ function isExpanded(key: string) {
           </div>
         </div>
         <div v-if="exportError" class="error-msg">{{ exportError }}</div>
+        <div v-if="exportSuccess" class="success-msg">
+          ✅ {{ exportSuccess }}
+        </div>
       </section>
 
       <!-- 占位 -->
@@ -580,6 +590,16 @@ function isExpanded(key: string) {
   border: 1px solid #fecaca;
   border-radius: 6px;
   color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.success-msg {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  color: #166534;
   font-size: 0.9rem;
 }
 
