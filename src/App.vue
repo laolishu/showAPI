@@ -4,7 +4,10 @@ import { useApiInput } from "./composables/useApiInput";
 import { useApiParser } from "./composables/useApiParser";
 import { exportToWord } from "./exporters/word-exporter";
 
+declare const __BUILD_VERSION__: string;
+
 const projectName = ref("");
+const buildVersion = __BUILD_VERSION__ || "v0.0.0-unknown";
 
 // 从 config.js 读取配置（编译后可直接修改 dist/config.js）
 const contactEmail = window.APP_CONFIG?.contactEmail || "";
@@ -378,6 +381,7 @@ function isExpanded(key: string) {
         }}</a></span
       >
       <span v-else>纯前端实现 · 文档不离开浏览器</span>
+      <span class="build-version">版本：{{ buildVersion }}</span>
     </footer>
   </div>
 </template>
@@ -597,6 +601,13 @@ function isExpanded(key: string) {
 
 .footer-link:hover {
   text-decoration: underline;
+}
+
+.build-version {
+  display: block;
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 0.82rem;
 }
 
 /* 解析摘要 */
