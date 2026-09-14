@@ -1,0 +1,296 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "海关分析系统 API",
+    "version": "1.2.0",
+    "description": "海关数据分析与统计接口，包含品类统计、口岸列表、能源数据等模块。"
+  },
+  "host": "api.customs.example.com",
+  "basePath": "/v1",
+  "schemes": ["https"],
+  "tags": [
+    { "name": "firework", "description": "烟花品类统计" },
+    { "name": "base", "description": "基础数据" },
+    { "name": "energy", "description": "能源数据" }
+  ],
+  "paths": {
+    "/api/firework/category-batch-stat": {
+      "get": {
+        "tags": ["firework"],
+        "summary": "品类批量统计",
+        "operationId": "getCategoryBatchStat",
+        "description": "按品类批量查询统计数据，支持按时间范围和品类编码筛选。",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "required": true,
+            "description": "开始日期",
+            "x-example": "2025-01-01"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "required": true,
+            "description": "结束日期",
+            "x-example": "2025-06-30"
+          },
+          {
+            "name": "categoryCodes",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "品类编码，多个用逗号分隔",
+            "x-example": "C001,C002"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "schema": { "$ref": "#/definitions/CategoryStatResponse" }
+          },
+          "401": { "description": "未授权" },
+          "404": { "description": "品类不存在" }
+        }
+      }
+    },
+    "/api/base/customs/list": {
+      "get": {
+        "tags": ["base"],
+        "summary": "口岸列表",
+        "operationId": "getCustomsList",
+        "description": "分页查询口岸列表，支持按名称模糊搜索。",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "format": "int32",
+            "required": false,
+            "default": 1,
+            "description": "页码"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "type": "integer",
+            "format": "int32",
+            "required": false,
+            "default": 20,
+            "description": "每页条数"
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "搜索关键词"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "schema": { "$ref": "#/definitions/CustomsPageResponse" }
+          },
+          "401": { "description": "未授权" }
+        }
+      }
+    },
+    "/api/energy/lng-display/display-data": {
+      "get": {
+        "tags": ["energy"],
+        "summary": "LNG 展示数据",
+        "operationId": "getLngDisplayData",
+        "description": "获取 LNG 展示数据，包含详情列表和趋势列表。",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "月份，格式 YYYY-MM",
+            "x-example": "2025-06"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "schema": { "$ref": "#/definitions/LngDisplayResponse" }
+          },
+          "403": { "description": "无权限" }
+        }
+      }
+    },
+    "/api/energy/national-overview/monthly-stat": {
+      "get": {
+        "tags": ["energy"],
+        "summary": "全国月度统计",
+        "operationId": "getNationalMonthlyStat",
+        "description": "全国能源月度统计数据。",
+        "parameters": [
+          {
+            "name": "transportCategory",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "运输类别",
+            "enum": ["pipeline", "ship", "rail", "truck"],
+            "x-example": "pipeline"
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "required": true,
+            "description": "开始日期"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "required": true,
+            "description": "结束日期"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "schema": { "$ref": "#/definitions/MonthlyStatResponse" }
+          },
+          "401": { "description": "未授权" },
+          "403": { "description": "无权限" },
+          "404": { "description": "数据不存在" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "CategoryStatResponse": {
+      "type": "object",
+      "description": "品类统计响应",
+      "properties": {
+        "code": { "type": "integer", "description": "状态码" },
+        "message": { "type": "string", "description": "提示信息" },
+        "timeStamp": { "type": "string", "description": "时间戳" },
+        "data": {
+          "type": "array",
+          "description": "统计结果列表",
+          "items": { "$ref": "#/definitions/CategoryStatItem" }
+        }
+      }
+    },
+    "CategoryStatItem": {
+      "type": "object",
+      "description": "品类统计项",
+      "properties": {
+        "categoryCode": { "type": "string", "description": "品类编码" },
+        "categoryName": { "type": "string", "description": "品类名称" },
+        "amount": { "type": "number", "format": "double", "description": "数量" },
+        "value": { "type": "number", "format": "double", "description": "金额" }
+      }
+    },
+    "CustomsPageResponse": {
+      "type": "object",
+      "description": "口岸分页响应",
+      "properties": {
+        "code": { "type": "integer", "description": "状态码" },
+        "message": { "type": "string", "description": "提示信息" },
+        "data": { "$ref": "#/definitions/CustomsPage" }
+      }
+    },
+    "CustomsPage": {
+      "type": "object",
+      "description": "分页对象",
+      "properties": {
+        "total": { "type": "integer", "description": "总条数" },
+        "page": { "type": "integer", "description": "当前页" },
+        "pageSize": { "type": "integer", "description": "每页条数" },
+        "records": {
+          "type": "array",
+          "description": "记录列表",
+          "items": { "$ref": "#/definitions/CustomsRecord" }
+        }
+      }
+    },
+    "CustomsRecord": {
+      "type": "object",
+      "description": "口岸记录",
+      "properties": {
+        "customsCode": { "type": "string", "description": "口岸编码" },
+        "customsName": { "type": "string", "description": "口岸名称" },
+        "province": { "type": "string", "description": "所属省份" },
+        "active": { "type": "boolean", "description": "是否启用" }
+      }
+    },
+    "LngDisplayResponse": {
+      "type": "object",
+      "description": "LNG 展示响应",
+      "properties": {
+        "code": { "type": "integer", "description": "状态码" },
+        "message": { "type": "string", "description": "提示信息" },
+        "data": { "$ref": "#/definitions/LngDisplayData" }
+      }
+    },
+    "LngDisplayData": {
+      "type": "object",
+      "description": "LNG 展示数据",
+      "properties": {
+        "detailList": {
+          "type": "array",
+          "description": "详情列表",
+          "items": { "$ref": "#/definitions/LngDetailItem" }
+        },
+        "trendList": {
+          "type": "array",
+          "description": "趋势列表",
+          "items": { "$ref": "#/definitions/LngTrendItem" }
+        }
+      }
+    },
+    "LngDetailItem": {
+      "type": "object",
+      "description": "LNG 详情项",
+      "properties": {
+        "stationName": { "type": "string", "description": "站点名称" },
+        "capacity": { "type": "number", "format": "double", "description": "产能" },
+        "utilization": { "type": "number", "format": "double", "description": "利用率" }
+      }
+    },
+    "LngTrendItem": {
+      "type": "object",
+      "description": "LNG 趋势项",
+      "properties": {
+        "month": { "type": "string", "description": "月份" },
+        "volume": { "type": "number", "format": "double", "description": "量" }
+      }
+    },
+    "MonthlyStatResponse": {
+      "type": "object",
+      "description": "月度统计响应",
+      "properties": {
+        "code": { "type": "integer", "description": "状态码" },
+        "message": { "type": "string", "description": "提示信息" },
+        "data": {
+          "type": "array",
+          "description": "统计列表",
+          "items": { "$ref": "#/definitions/MonthlyStatItem" }
+        }
+      }
+    },
+    "MonthlyStatItem": {
+      "type": "object",
+      "description": "月度统计项",
+      "properties": {
+        "region": { "type": "string", "description": "区域" },
+        "volume": { "type": "number", "format": "double", "description": "总量" },
+        "yoy": { "type": "number", "format": "double", "description": "同比" }
+      }
+    }
+  }
+}

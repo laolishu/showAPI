@@ -2,10 +2,15 @@
 import { ref } from "vue";
 import { useApiInput } from "./composables/useApiInput";
 import { useApiParser } from "./composables/useApiParser";
+import { useI18n } from "./composables/useI18n";
 import { exportToWord } from "./exporters/word-exporter";
-// import { exportToExcel } from "./exporters/excel-exporter";
+
+declare const __BUILD_VERSION__: string;
+
+const { lang, t } = useI18n();
 
 const projectName = ref("");
+const buildVersion = __BUILD_VERSION__ || "v0.0.0-unknown";
 
 // 从 config.js 读取配置（编译后可直接修改 dist/config.js）
 const contactEmail = window.APP_CONFIG?.contactEmail || "";
@@ -66,34 +71,28 @@ function clearInput() {
 }
 
 // 导出
-const exporting = ref<"word" | "excel" | null>(null);
+const exporting = ref<"word" | null>(null);
 const exportError = ref("");
+const exportSuccess = ref("");
 
 async function onExportWord() {
   if (!apiDoc.value) return;
   exporting.value = "word";
   exportError.value = "";
+  exportSuccess.value = "";
   try {
     await exportToWord(apiDoc.value, projectName.value, selectedTag.value);
+    exportSuccess.value = t.value.exportSuccess;
+    // 3秒后自动消失
+    setTimeout(() => {
+      exportSuccess.value = "";
+    }, 3000);
   } catch (e: any) {
-    exportError.value = `Word 导出失败：${e.message || "未知错误"}`;
+    exportError.value = t.value.exportFail(e.message || "");
   } finally {
     exporting.value = null;
   }
 }
-
-// async function onExportExcel() {
-//   if (!apiDoc.value) return;
-//   exporting.value = "excel";
-//   exportError.value = "";
-//   try {
-//     await exportToExcel(apiDoc.value, projectName.value, selectedTag.value);
-//   } catch (e: any) {
-//     exportError.value = `Excel 导出失败：${e.message || "未知错误"}`;
-//   } finally {
-//     exporting.value = null;
-//   }
-// }
 
 // 展开/折叠接口
 const expandedOps = ref<Set<string>>(new Set());
@@ -112,39 +111,69 @@ function isExpanded(key: string) {
 <template>
   <div class="app">
     <header class="app-header">
-      <h1>Swagger / OpenAPI 文档转换工具</h1>
-      <p class="subtitle">纯前端 · 本地处理 · 不上传文档</p>
+      <div class="lang-toggle">
+        <button
+          class="lang-btn"
+          :class="{ active: lang === 'zh' }"
+          @click="lang = 'zh'"
+        >
+          中文
+        </button>
+        <button
+          class="lang-btn"
+          :class="{ active: lang === 'en' }"
+          @click="lang = 'en'"
+        >
+          EN
+        </button>
+      </div>
+      <h1>{{ t.title }}</h1>
+      <p class="subtitle">{{ t.subtitle }}</p>
     </header>
 
     <main class="app-main">
       <!-- 步骤 1：输入 -->
       <section class="card">
-        <h2>① 导入 API 文档</h2>
-        <input ref="fileInputRef" type="file" accept=".json,.yaml,.yml,.txt" style="display: none"
-          @change="onFileInputChange" />
+        <h2>{{ t.step1 }}</h2>
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept=".json,.yaml,.yml,.txt"
+          style="display: none"
+          @change="onFileInputChange"
+        />
         <div class="input-area">
-          <div class="drop-zone" :class="{ dragging: isDragging }" @click="openFilePicker" @dragenter="onDragEnter"
-            @dragover.prevent @dragleave="onDragLeave" @drop.prevent="onDrop">
-            <p>拖拽文件到此处，或点击选择文件</p>
-            <p class="hint">
-              支持 Swagger 2.0 / OpenAPI 3.0 · JSON / YAML · 最大 10 MB
-            </p>
+          <div
+            class="drop-zone"
+            :class="{ dragging: isDragging }"
+            @click="openFilePicker"
+            @dragenter="onDragEnter"
+            @dragover.prevent
+            @dragleave="onDragLeave"
+            @drop.prevent="onDrop"
+          >
+            <p>{{ t.dragHint }}</p>
+            <p class="hint">{{ t.dragSub }}</p>
           </div>
           <div class="paste-area">
-            <label>或粘贴 JSON / YAML 内容：</label>
-            <textarea v-model="rawText" rows="6" placeholder='{"swagger": "2.0", "info": {...}, "paths": {...}}'
-              @input="onTextareaInput"></textarea>
+            <label>{{ t.pasteLabel }}</label>
+            <textarea
+              v-model="rawText"
+              rows="6"
+              placeholder='{"swagger": "2.0", "info": {...}, "paths": {...}}'
+              @input="onTextareaInput"
+            ></textarea>
           </div>
         </div>
 
         <!-- 文件信息 -->
         <div v-if="hasContent" class="file-info">
           <span v-if="source === 'file'">
-            📄 {{ fileName }}（{{ fileSize }} 字节）
+            {{ t.fileInfo(fileName, fileSize) }}
           </span>
-          <span v-else>📋 已粘贴文本（{{ rawText.length }} 字符）</span>
+          <span v-else>{{ t.pastedInfo(rawText.length) }}</span>
           <span class="format-badge">{{ format.toUpperCase() }}</span>
-          <button class="btn-clear" @click="clearInput">清除</button>
+          <button class="btn-clear" @click="clearInput">{{ t.clear }}</button>
         </div>
 
         <!-- 输入错误提示 -->
@@ -154,24 +183,24 @@ function isExpanded(key: string) {
         <div v-if="parseError" class="error-msg">{{ parseError }}</div>
 
         <!-- 解析中 -->
-        <div v-if="isParsing" class="parsing-msg">⏳ 正在解析文档...</div>
+        <div v-if="isParsing" class="parsing-msg">{{ t.parsing }}</div>
 
         <!-- 解析成功摘要 -->
         <div v-if="apiDoc" class="parse-summary">
           <div class="summary-item">
-            <span class="summary-label">规范版本</span>
+            <span class="summary-label">{{ t.specVersion }}</span>
             <span class="summary-value">{{ apiDoc.sourceVersion }}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">接口数量</span>
+            <span class="summary-label">{{ t.opCount }}</span>
             <span class="summary-value">{{ operations.length }}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">Tag 数量</span>
+            <span class="summary-label">{{ t.tagCount }}</span>
             <span class="summary-value">{{ tags.length }}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">数据模型</span>
+            <span class="summary-label">{{ t.schemaCount }}</span>
             <span class="summary-value">{{ apiDoc.schemas.length }}</span>
           </div>
         </div>
@@ -184,32 +213,53 @@ function isExpanded(key: string) {
 
       <!-- 步骤 2：预览与 Tag 筛选 -->
       <section class="card" v-if="apiDoc">
-        <h2>② 接口预览</h2>
+        <h2>{{ t.step2 }}</h2>
 
         <!-- Tag 筛选 -->
         <div class="tag-filter">
-          <button class="tag-btn" :class="{ active: selectedTag === null }" @click="selectedTag = null">
-            全部（{{ operations.length }}）
+          <button
+            class="tag-btn"
+            :class="{ active: selectedTag === null }"
+            @click="selectedTag = null"
+          >
+            {{ t.all(operations.length) }}
           </button>
-          <button v-for="tag in tags" :key="tag" class="tag-btn" :class="{ active: selectedTag === tag }"
-            @click="selectedTag = tag">
-            {{ tag }}（{{
-              operations.filter((o) => o.primaryTag === tag).length
-            }}）
+          <button
+            v-for="tag in tags"
+            :key="tag"
+            class="tag-btn"
+            :class="{ active: selectedTag === tag }"
+            @click="selectedTag = tag"
+          >
+            {{ tag
+            }}{{
+              t.tagCountSuffix(
+                operations.filter((o) => o.primaryTag === tag).length,
+              )
+            }}
           </button>
         </div>
 
         <!-- 接口列表 -->
         <div class="op-list">
-          <div v-for="op in filteredOperations" :key="op.operationKey" class="op-item"
-            :class="{ expanded: isExpanded(op.operationKey) }">
+          <div
+            v-for="op in filteredOperations"
+            :key="op.operationKey"
+            class="op-item"
+            :class="{ expanded: isExpanded(op.operationKey) }"
+          >
             <div class="op-header" @click="toggleOp(op.operationKey)">
-              <span class="method-badge" :class="`method-${op.method.toLowerCase()}`">
+              <span
+                class="method-badge"
+                :class="`method-${op.method.toLowerCase()}`"
+              >
                 {{ op.method }}
               </span>
               <span class="op-path">{{ op.path }}</span>
               <span class="op-name">{{ op.displayName }}</span>
-              <span v-if="op.deprecated" class="deprecated-badge">已废弃</span>
+              <span v-if="op.deprecated" class="deprecated-badge">{{
+                t.deprecated
+              }}</span>
               <span class="expand-icon">{{
                 isExpanded(op.operationKey) ? "−" : "+"
               }}</span>
@@ -218,27 +268,27 @@ function isExpanded(key: string) {
             <!-- 展开详情 -->
             <div v-if="isExpanded(op.operationKey)" class="op-detail">
               <div class="detail-row">
-                <span class="detail-label">描述</span>
+                <span class="detail-label">{{ t.desc }}</span>
                 <span class="detail-value">{{ op.description || "—" }}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">请求格式</span>
+                <span class="detail-label">{{ t.reqFormat }}</span>
                 <span class="detail-value">{{
-                  op.requestContentType || "无"
+                  op.requestContentType || t.none
                 }}</span>
               </div>
 
               <!-- 参数表 -->
               <div v-if="op.parameters.length > 0" class="detail-section">
-                <h4>请求参数</h4>
+                <h4>{{ t.reqParams }}</h4>
                 <table class="param-table">
                   <thead>
                     <tr>
-                      <th>名称</th>
-                      <th>位置</th>
-                      <th>类型</th>
-                      <th>必填</th>
-                      <th>描述</th>
+                      <th>{{ t.name }}</th>
+                      <th>{{ t.location }}</th>
+                      <th>{{ t.type }}</th>
+                      <th>{{ t.required }}</th>
+                      <th>{{ t.desc }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -246,7 +296,7 @@ function isExpanded(key: string) {
                       <td>{{ p.name }}</td>
                       <td>{{ p.location }}</td>
                       <td>{{ p.type }}</td>
-                      <td>{{ p.required ? "是" : "否" }}</td>
+                      <td>{{ p.required ? t.yes : t.no }}</td>
                       <td>{{ p.description || "" }}</td>
                     </tr>
                   </tbody>
@@ -255,18 +305,21 @@ function isExpanded(key: string) {
 
               <!-- 请求体 -->
               <div v-if="op.requestBody" class="detail-section">
-                <h4>请求体（{{ op.requestBody.contentType }}）</h4>
-                <div v-if="op.requestBody.fields.length === 0" class="empty-hint">
-                  无字段
+                <h4>{{ t.reqBody(op.requestBody.contentType) }}</h4>
+                <div
+                  v-if="op.requestBody.fields.length === 0"
+                  class="empty-hint"
+                >
+                  {{ t.noFields }}
                 </div>
                 <table v-else class="param-table">
                   <thead>
                     <tr>
-                      <th>序号</th>
-                      <th>字段</th>
-                      <th>类型</th>
-                      <th>必填</th>
-                      <th>描述</th>
+                      <th>{{ t.index }}</th>
+                      <th>{{ t.field }}</th>
+                      <th>{{ t.type }}</th>
+                      <th>{{ t.required }}</th>
+                      <th>{{ t.desc }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -274,7 +327,7 @@ function isExpanded(key: string) {
                       <td>{{ f.displayIndex }}</td>
                       <td>{{ f.name }}</td>
                       <td>{{ f.type }}</td>
-                      <td>{{ f.required ? "是" : "否" }}</td>
+                      <td>{{ f.required ? t.yes : t.no }}</td>
                       <td>{{ f.description || "" }}</td>
                     </tr>
                   </tbody>
@@ -283,14 +336,14 @@ function isExpanded(key: string) {
 
               <!-- 响应 -->
               <div class="detail-section">
-                <h4>响应</h4>
+                <h4>{{ t.responses }}</h4>
                 <table class="param-table">
                   <thead>
                     <tr>
-                      <th>状态码</th>
-                      <th>描述</th>
+                      <th>{{ t.statusCode }}</th>
+                      <th>{{ t.desc }}</th>
                       <th>Content-Type</th>
-                      <th>模型</th>
+                      <th>{{ t.model }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -310,50 +363,58 @@ function isExpanded(key: string) {
 
       <!-- 步骤 3：导出 -->
       <section class="card" v-if="apiDoc">
-        <h2>③ 导出配置</h2>
+        <h2>{{ t.step3 }}</h2>
         <div class="config-row">
-          <label>项目名称：</label>
-          <input v-model="projectName" type="text" placeholder="输入项目名称（可选）" />
+          <label>{{ t.projectName }}</label>
+          <input
+            v-model="projectName"
+            type="text"
+            :placeholder="t.projectNamePh"
+          />
         </div>
         <div class="config-row">
-          <label>导出范围：</label>
+          <label>{{ t.exportScope }}</label>
           <span class="export-scope">
             {{
               selectedTag
-                ? `仅导出 Tag「${selectedTag}」的接口（${filteredOperations.length} 个）`
-                : `导出全部接口（${operations.length} 个）`
+                ? t.scopeTag(selectedTag, filteredOperations.length)
+                : t.scopeAll(operations.length)
             }}
           </span>
         </div>
         <div class="config-row">
-          <label>导出格式：</label>
+          <label>{{ t.exportFormat }}</label>
           <div class="format-options">
-            <button class="btn btn-primary" :disabled="exporting !== null" @click="onExportWord">
-              {{ exporting === "word" ? "导出中..." : "导出 Word (.docx)" }}
-            </button>
-            <!-- <button
-              class="btn btn-secondary"
+            <button
+              class="btn btn-primary"
               :disabled="exporting !== null"
-              @click="onExportExcel"
+              @click="onExportWord"
             >
-              {{ exporting === "excel" ? "导出中..." : "导出 Excel (.xlsx)" }}
-            </button> -->
+              {{ exporting === "word" ? t.exporting : t.exportWord }}
+            </button>
           </div>
         </div>
         <div v-if="exportError" class="error-msg">{{ exportError }}</div>
+        <div v-if="exportSuccess" class="success-msg">
+          ✅ {{ exportSuccess }}
+        </div>
       </section>
 
       <!-- 占位 -->
       <section class="card placeholder" v-if="!hasContent">
-        <p>导入文档后，此处显示解析结果预览与 Tag 筛选。</p>
+        <p>{{ t.placeholder }}</p>
       </section>
     </main>
 
     <footer class="app-footer">
-      <span v-if="contactEmail">联系方式：<a class="footer-link" :href="`mailto:${contactEmail}`">{{
-        contactEmail
-      }}</a></span>
-      <span v-else>纯前端实现 · 文档不离开浏览器</span>
+      <span v-if="contactEmail"
+        >{{ t.contact
+        }}<a class="footer-link" :href="`mailto:${contactEmail}`">{{
+          contactEmail
+        }}</a></span
+      >
+      <span v-else>{{ t.footer }}</span>
+      <span class="build-version">{{ t.version }}{{ buildVersion }}</span>
     </footer>
   </div>
 </template>
@@ -370,6 +431,37 @@ function isExpanded(key: string) {
 .app-header {
   text-align: center;
   margin-bottom: 32px;
+}
+
+.lang-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.lang-btn {
+  padding: 4px 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lang-btn:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.lang-btn:last-child {
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+
+.lang-btn.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
 }
 
 .app-header h1 {
@@ -501,6 +593,16 @@ function isExpanded(key: string) {
   font-size: 0.9rem;
 }
 
+.success-msg {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  color: #166534;
+  font-size: 0.9rem;
+}
+
 .config-row {
   display: flex;
   align-items: center;
@@ -573,6 +675,13 @@ function isExpanded(key: string) {
 
 .footer-link:hover {
   text-decoration: underline;
+}
+
+.build-version {
+  display: block;
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 0.82rem;
 }
 
 /* 解析摘要 */
