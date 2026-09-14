@@ -31,15 +31,16 @@ function getFileName(doc: ApiDocument, projectName: string): string {
 /** 表格列数（统一为 7 列） */
 const COLS = 7;
 
-/** 配色方案 */
+/** 配色方案（商务深蓝：与 Word 内置蓝色表格风格一致的办公配色） */
 const COLOR = {
-  border: "000000",      // 表格线：黑色
-  headerFill: "E8F0FE",  // 表头背景：淡蓝
-  labelFill: "F5F8FC",   // 标签背景：极浅蓝灰
-  sectionFill: "DCE7FB", // 分区标题背景：淡蓝
-  sectionText: "1A56DB", // 分区标题文字：深蓝
-  labelText: "334155",   // 标签文字：深灰
-  valueText: "1F2937",   // 值文字：近黑
+  border: "A9BFD6",      // 表格线：浅蓝灰细线（替代纯黑，降低视觉硬度）
+  headerFill: "DEEAF6",  // 表头背景：浅蓝
+  labelFill: "F2F6FB",   // 标签背景：极浅蓝
+  sectionFill: "C9D9F1", // 分区标题背景：中浅蓝（比表头深一级，形成层次）
+  sectionText: "1F4E79", // 分区标题文字 / 主色：深蓝
+  labelText: "2F435E",   // 标签文字：深岩灰
+  valueText: "262626",   // 值文字：中性近黑
+  warn: "C00000",        // 已废弃状态：警示红
 };
 
 /** 通用边框（细线，浅蓝灰） */
@@ -98,14 +99,14 @@ function sectionRow(text: string): TableRow {
 }
 
 /** 创建基本信息行（标签 1 列带背景色，值跨 6 列） */
-function infoRow(label: string, value: string): TableRow {
+function infoRow(label: string, value: string, valueColor?: string): TableRow {
   return new TableRow({
     children: [
       cell(label, { bold: true, fill: COLOR.labelFill, color: COLOR.labelText, width: COL_WIDTHS[0] }),
       new TableCell({
         children: [
           new Paragraph({
-            children: [new TextRun({ text: value || "—", size: 18, color: COLOR.valueText })],
+            children: [new TextRun({ text: value || "—", size: 18, color: valueColor ?? COLOR.valueText })],
           }),
         ],
         borders,
@@ -165,7 +166,7 @@ function buildOperationTable(op: ApiOperation): Table {
   }
   rows.push(infoRow("请求格式", op.requestContentType || "无"));
   if (op.deprecated) {
-    rows.push(infoRow("状态", "⚠️ 已废弃"));
+    rows.push(infoRow("状态", "⚠️ 已废弃", COLOR.warn));
   }
 
   // === 请求参数区 ===
@@ -281,6 +282,7 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
           text: projectName || doc.info.title || "API 文档",
           bold: true,
           size: 48,
+          color: COLOR.sectionText,
         }),
       ],
     })
