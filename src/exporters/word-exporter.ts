@@ -17,6 +17,7 @@ import {
   PageBreak,
   TableLayoutType,
   TableOfContents,
+  LineRuleType,
 } from "docx";
 import type { ApiDocument, ApiOperation, ApiField } from "../types/ir";
 
@@ -43,6 +44,20 @@ const COLOR = {
   warn: "C00000",        // 已废弃状态：警示红
 };
 
+/** 字体（与预览一致：中文微软雅黑 + 西文 Calibri） */
+const FONT = {
+  ascii: "Calibri",
+  hAnsi: "Calibri",
+  eastAsia: "Microsoft YaHei",
+  cs: "Calibri",
+};
+
+/** 正文行距：1.45 倍（与预览 line-height 1.45 对齐；240 = 单倍行距） */
+const LINE_SPACING = { line: 348, lineRule: LineRuleType.AUTO };
+
+/** 单元格内边距（twips：上下 90 ≈ 4.5pt、左右 135 ≈ 6.75pt，与预览 padding 对齐） */
+const CELL_MARGINS = { top: 90, bottom: 90, left: 135, right: 135 };
+
 /** 通用边框（细线，浅蓝灰） */
 const borders = {
   top: { style: BorderStyle.SINGLE, size: 4, color: COLOR.border },
@@ -51,11 +66,6 @@ const borders = {
   right: { style: BorderStyle.SINGLE, size: 4, color: COLOR.border },
 };
 
-/**
- * 接口详情表固定列宽（DXA，1 英寸 = 1440 DXA）。
- * 顺序：序号/字段、位置、类型、必填、描述、默认值、示例。
- * 总宽 9000 DXA（6.25 英寸），为“描述”保留约 44% 的空间。
- */
 const COL_WIDTHS = [1080, 630, 900, 450, 3960, 900, 1080];
 const TABLE_WIDTH = COL_WIDTHS.reduce((total, width) => total + width, 0);
 
@@ -64,12 +74,14 @@ function cell(text: string, opts?: { bold?: boolean; fill?: string; colSpan?: nu
   return new TableCell({
     children: [
       new Paragraph({
-        children: [new TextRun({ text: text || "", size: 18, bold: opts?.bold, color: opts?.color })],
+        children: [new TextRun({ text: text || "", size: 20, bold: opts?.bold, color: opts?.color, font: FONT })],
         alignment: AlignmentType.LEFT,
+        spacing: LINE_SPACING,
       }),
     ],
     shading: opts?.fill ? { type: "clear", fill: opts.fill } : undefined,
     borders,
+    margins: CELL_MARGINS,
     columnSpan: opts?.colSpan,
     width: opts?.width ? { size: opts.width, type: WidthType.DXA } : undefined,
   });
@@ -87,11 +99,13 @@ function sectionRow(text: string): TableRow {
       new TableCell({
         children: [
           new Paragraph({
-            children: [new TextRun({ text, bold: true, size: 20, color: COLOR.sectionText })],
+            children: [new TextRun({ text, bold: true, size: 20, color: COLOR.sectionText, font: FONT })],
+            spacing: LINE_SPACING,
           }),
         ],
         shading: { type: "clear", fill: COLOR.sectionFill },
         borders,
+        margins: CELL_MARGINS,
         columnSpan: COLS,
       }),
     ],
@@ -106,10 +120,12 @@ function infoRow(label: string, value: string, valueColor?: string): TableRow {
       new TableCell({
         children: [
           new Paragraph({
-            children: [new TextRun({ text: value || "—", size: 18, color: valueColor ?? COLOR.valueText })],
+            children: [new TextRun({ text: value || "—", size: 20, color: valueColor ?? COLOR.valueText, font: FONT })],
+            spacing: LINE_SPACING,
           }),
         ],
         borders,
+        margins: CELL_MARGINS,
         columnSpan: COLS - 1,
         width: { size: TABLE_WIDTH - COL_WIDTHS[0], type: WidthType.DXA },
       }),
@@ -283,6 +299,7 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
           bold: true,
           size: 48,
           color: COLOR.sectionText,
+          font: FONT,
         }),
       ],
     })
@@ -291,7 +308,7 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [
-        new TextRun({ text: `版本：${doc.info.version}`, size: 24 }),
+        new TextRun({ text: `版本：${doc.info.version}`, size: 24, font: FONT }),
       ],
     })
   );
@@ -302,6 +319,7 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
         new TextRun({
           text: `生成时间：${new Date().toLocaleString("zh-CN")}`,
           size: 20,
+          font: FONT,
         }),
       ],
     })
@@ -310,7 +328,7 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [
-        new TextRun({ text: `规范版本：${doc.sourceVersion}`, size: 20 }),
+        new TextRun({ text: `规范版本：${doc.sourceVersion}`, size: 20, font: FONT }),
       ],
     })
   );
@@ -320,13 +338,14 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
   children.push(
     new Paragraph({
       heading: HeadingLevel.HEADING_1,
-      children: [new TextRun({ text: "文档概述", bold: true, size: 32 })],
+      children: [new TextRun({ text: "文档概述", bold: true, size: 32, font: FONT })],
     })
   );
   if (doc.info.description) {
     children.push(
       new Paragraph({
-        children: [new TextRun({ text: doc.info.description, size: 20 })],
+        children: [new TextRun({ text: doc.info.description, size: 20, font: FONT })],
+        spacing: LINE_SPACING,
       })
     );
   }
@@ -334,9 +353,10 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
     children.push(
       new Paragraph({
         children: [
-          new TextRun({ text: "服务地址：", bold: true, size: 20 }),
-          new TextRun({ text: doc.servers.map((s) => s.url).join(", "), size: 20 }),
+          new TextRun({ text: "服务地址：", bold: true, size: 20, font: FONT }),
+          new TextRun({ text: doc.servers.map((s) => s.url).join(", "), size: 20, font: FONT }),
         ],
+        spacing: LINE_SPACING,
       })
     );
   }
@@ -346,7 +366,7 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
   children.push(
     new Paragraph({
       heading: HeadingLevel.HEADING_1,
-      children: [new TextRun({ text: "接口目录", bold: true, size: 32 })],
+      children: [new TextRun({ text: "接口目录", bold: true, size: 32, font: FONT })],
     })
   );
 
@@ -362,7 +382,7 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
   children.push(
     new Paragraph({
       heading: HeadingLevel.HEADING_1,
-      children: [new TextRun({ text: "接口详情", bold: true, size: 32 })],
+      children: [new TextRun({ text: "接口详情", bold: true, size: 32, font: FONT })],
     })
   );
 
@@ -374,7 +394,7 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
       children.push(
         new Paragraph({
           heading: HeadingLevel.HEADING_2,
-          children: [new TextRun({ text: currentTag, bold: true, size: 28 })],
+          children: [new TextRun({ text: currentTag, bold: true, size: 28, font: FONT })],
         })
       );
     }
@@ -388,9 +408,10 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
             text: `${opIndex + 1}. ${op.displayName}`,
             bold: true,
             size: 24,
+            font: FONT,
           }),
         ],
-        spacing: { before: 200, after: 100 },
+        spacing: { before: 200, after: 100, line: LINE_SPACING.line, lineRule: LINE_SPACING.lineRule },
       })
     );
 
@@ -407,7 +428,7 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
     children.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
-        children: [new TextRun({ text: "数据模型附录", bold: true, size: 32 })],
+        children: [new TextRun({ text: "数据模型附录", bold: true, size: 32, font: FONT })],
       })
     );
 
@@ -415,13 +436,14 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
       children.push(
         new Paragraph({
           heading: HeadingLevel.HEADING_3,
-          children: [new TextRun({ text: schema.name, bold: true, size: 24 })],
+          children: [new TextRun({ text: schema.name, bold: true, size: 24, font: FONT })],
         })
       );
       if (schema.description) {
         children.push(
           new Paragraph({
-            children: [new TextRun({ text: schema.description, size: 20 })],
+            children: [new TextRun({ text: schema.description, size: 20, font: FONT })],
+            spacing: LINE_SPACING,
           })
         );
       }
@@ -470,9 +492,16 @@ export async function exportToWord(doc: ApiDocument, projectName: string, select
       children.push(new Paragraph({ children: [] }));
     }
   }
-
-  // 生成文档
+  // 生成文档（document 级默认样式兜底：字体、字号、颜色、行距，覆盖目录等未显式设置的文本）
   const wordDoc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: { font: FONT, size: 20, color: COLOR.valueText },
+          paragraph: { spacing: LINE_SPACING },
+        },
+      },
+    },
     sections: [
       {
         properties: {},
